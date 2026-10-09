@@ -1,0 +1,4 @@
+venv/
+.env
+gcp-credentials.json
+gcp-credentials.json
