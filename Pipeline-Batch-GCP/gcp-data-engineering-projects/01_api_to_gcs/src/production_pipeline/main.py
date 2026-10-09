@@ -15,7 +15,7 @@ from google.oauth2 import service_account
 
 # --- CONFIGURATIONS ---
 API_URL = "https://api.open-meteo.com/v1/forecast?latitude=48.8534&longitude=2.3488&current_weather=true"
-KEY_PATH = "/Users/fofanalazeny/Desktop/Book-Data-Engineering/gcp-data-engineering-projects/01_api_to_gcs/gcp-credentials.json"  # Le chemin remonte de deux dossiers (src -> 01_api_to_gcs) pour trouver la clé
+KEY_PATH = "/Users/fofanalazeny/Desktop/Book-Data-Engineering/Pipeline-Batch-GCP/gcp-data-engineering-projects/01_api_to_gcs/gcp-credentials.json"  # Le chemin remonte de deux dossiers (src -> 01_api_to_gcs) pour trouver la clé
 BUCKET_NAME = "data-lake-fofana-lazeny-2026"
 
 # --- ETAPE 1 : EXTRACT ---
@@ -65,7 +65,7 @@ def load_to_gcs(data, bucket_name, key_path):
         blob_name = f"meteo_paris/weather_paris_{timestamp_str}.json"
         
         blob = bucket.blob(blob_name)
-        blob.upload_from_string(json.dumps(data, indent=2), content_type="application/json")
+        blob.upload_from_string(json.dumps(data), content_type="application/json")
         print(f"✅ [LOAD] Succès ! Fichier sauvegardé : {blob_name}")
         
     except Exception as e:
