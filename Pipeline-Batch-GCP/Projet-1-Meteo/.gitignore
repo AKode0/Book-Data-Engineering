@@ -1,0 +1,18 @@
+# Environnements virtuels
+venv/
+.venv/
+env/
+
+# Secrets et variables d'environnement
+.env
+*.env.local
+
+# Cache Python et tests
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
