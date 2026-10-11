@@ -20,7 +20,7 @@ Chaque projet est conçu de bout en bout selon une séparation stricte des respo
 └─────────────────┘      └─────────────────────────┘      └─────────────────────────┘      └────────────────────────┘      └───────────────────────┘
 ```
 
-### Les 4 Contrôles Non-Négociables de Fiabilité
+### Les 4 Contrôles de Fiabilité
 
 Tout pipeline déployé respecte impérativement :
 1. **Idempotence absolue** : rejouer une exécution à l'infini donne le même état final (chemins GCS déterministes `annee=YYYY/mois=MM/jour=DD/` et instructions `MERGE INTO` dédoublonnantes dans BigQuery).
@@ -32,13 +32,23 @@ Tout pipeline déployé respecte impérativement :
 
 ## 2. La Trajectoire : Où je veux aller
 
-Pour couvrir les grands cas d'usage de l'ingénierie de données sur Google Cloud, mon travail est centré sur la réalisation progressive de **cinq pipelines majeurs End-to-End** :
+Pour couvrir l'ensemble des standards du Data Engineering moderne sur Google Cloud, mon parcours est centré sur la réalisation progressive de **cinq pipelines majeurs End-to-End** :
 
-1. **Pipeline 1 — Météo (API REST & Socle Serverless)** : Ingestion horaire, partitionnement Hive, table externe GCS et chargement MERGE idempotent dans BigQuery *(validé & en production)*.
-2. **Pipeline 2 — Données Financières (API Authentifiée & Secrets)** : Sécurité renforcée avec Google Secret Manager, gestion des quotas API, repli exponentiel (Exponential Backoff).
-3. **Pipeline 3 — Mobilité & Flux Paginés (API Dynamique)** : Pagination par curseur et offset, condition d'arrêt déterministe, découpage en micro-lots GCS.
-4. **Pipeline 4 — Entrepôt Évolutif (Historisation SCD2 & Structures Imbriquées)** : Suivi de validité temporelle (Slowly Changing Dimensions Type 2) et modélisation BigQuery avec `STRUCT` et `REPEATED`.
-5. **Pipeline 5 — Réconciliation Multi-Sources & Restitution BI** : Croisement de flux hétérogènes, réconciliation de grains spatio-temporels, dimensions conformes et reporting Looker Studio.
+1. **Pipeline 1 — Socle Serverless & Ingestion API Native** *(Validé & en production)*
+   - **Démarche** : Ingestion batch en Python pur, validation stricte à la source, stockage Cloud Storage en partitionnement Hive, table externe et chargement `MERGE` idempotent sans doublon dans l'entrepôt BigQuery.
+   - **Technologies** : Python 3.11, Cloud Storage, Cloud Functions Gen 2, Cloud Scheduler, BigQuery, Pytest.
+2. **Pipeline 2 — Ingestion Outillée & Conteneurisation (ELT & Docker)**
+   - **Démarche** : Normalisation de la collecte via des connecteurs d'ingestion managés, exécution de tâches d'extraction conteneurisées et sécurisation cryptographique des identifiants.
+   - **Technologies** : Docker, Airbyte, Google Secret Manager, Cloud Storage, BigQuery.
+3. **Pipeline 3 — Modélisation Analytique & Qualité de Données (dbt Core)**
+   - **Démarche** : Transformation modulaire en couches (*Staging → Intermediate → Marts*), historisation de dimensions à évolution lente (SCD Type 2), modélisation de types imbriqués (`STRUCT`/`REPEATED`) et tests automatisés de contrat de données.
+   - **Technologies** : dbt Core, BigQuery SQL, Jinja, dbt-test.
+4. **Pipeline 4 — Traitement Distribué & Formats Colonnaires (Apache Spark)**
+   - **Démarche** : Ingestion et transformation de gros volumes de données en calcul distribué, conversion au format colonnaire Parquet compressé (Snappy), élagage physique de partitions et exécution en mémoire bornée.
+   - **Technologies** : Apache Spark (PySpark), Cloud Dataproc Serverless, Cloud Storage, Apache Parquet.
+5. **Pipeline 5 — Orchestration Industrielle & Infrastructure as Code (Airflow & Terraform)**
+   - **Démarche** : Orchestration centralisée de bout en bout par DAG (dépendances inter-tâches, alertes de panne, gestion de backfill), exposition décisionnelle BI et déploiement 100 % déclaratif et reproductible de l'infrastructure Cloud.
+   - **Technologies** : Apache Airflow (Cloud Composer), Terraform (IaC), Looker Studio, GitHub Actions (CI/CD).
 
 ---
 
@@ -56,4 +66,4 @@ Pour couvrir les grands cas d'usage de l'ingénierie de données sur Google Clou
 
 - **Auteur** : FOFANA Lazeny
 - **LinkedIn** : [linkedin.com/in/abdoul-karim-fofana](https://www.linkedin.com/in/abdoul-karim-fofana/)
-- **Objectif** : Alternance Data Engineer (Formation Liora en partenariat avec Mines Paris-PSL)
+- **Objectif** : Alternance Data Engineer (Formation Master Spécialisé Data and Gan AI engineering à EFREI
