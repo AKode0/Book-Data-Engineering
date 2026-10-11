@@ -118,4 +118,4 @@ chmod +x deployer.sh
 
 ## 5. Auteur & Contexte
 
-Projet réalisé par **FOFANA Lazeny** dans le cadre de la préparation à l'alternance Data Engineer.
+Projet réalisé par **FOFANA Lazeny**.
