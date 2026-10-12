@@ -1,0 +1,7 @@
+venv/
+01_ingestion/venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store

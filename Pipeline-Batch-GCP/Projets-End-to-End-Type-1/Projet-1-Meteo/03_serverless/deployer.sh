@@ -13,7 +13,21 @@ BUCKET="data-lake-meteo-${PROJET}"
 SA_NAME="sa-pipeline"
 SERVICE_ACCOUNT="${SA_NAME}@${PROJET}.iam.gserviceaccount.com"
 
-echo "=== 1. Vérification et création du compte de service exécuteur ==="
+echo "=== 1. Activation des APIs Google Cloud requises ==="
+gcloud services enable \
+  cloudfunctions.googleapis.com \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudscheduler.googleapis.com || true
+
+echo "=== 2. Vérification du Bucket Cloud Storage ==="
+gcloud storage buckets create "gs://${BUCKET}" \
+  --location="${REGION}" \
+  --uniform-bucket-level-access \
+  --public-access-prevention || echo "Bucket déjà existant."
+
+echo "=== 3. Vérification et création du compte de service exécuteur ==="
 gcloud iam service-accounts create "${SA_NAME}" \
   --display-name="Compte d execution Cloud Function Meteo" || echo "Compte déjà existant."
 
@@ -21,7 +35,7 @@ gcloud projects add-iam-policy-binding "${PROJET}" \
   --member="serviceAccount:${SERVICE_ACCOUNT}" \
   --role="roles/storage.objectAdmin" --condition=None || true
 
-echo "=== 2. Déploiement de la Cloud Function ${FONCTION} ==="
+echo "=== 4. Déploiement de la Cloud Function ${FONCTION} ==="
 gcloud functions deploy "${FONCTION}" \
   --gen2 \
   --region="${REGION}" \
@@ -35,4 +49,5 @@ gcloud functions deploy "${FONCTION}" \
   --timeout=120s \
   --memory=256Mi
 
-echo "=== Déploiement terminé avec succès ==="
+URL=$(gcloud functions describe "${FONCTION}" --region="${REGION}" --gen2 --format='value(serviceConfig.uri)')
+echo "=== Déploiement terminé avec succès. URL : ${URL} ==="
