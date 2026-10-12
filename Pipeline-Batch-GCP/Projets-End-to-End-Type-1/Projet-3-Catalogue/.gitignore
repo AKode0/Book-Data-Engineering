@@ -1,0 +1,7 @@
+01_ingestion/venv/
+venv/
+.env
+*.json
+__pycache__/
+.DS_Store
+*.pyc

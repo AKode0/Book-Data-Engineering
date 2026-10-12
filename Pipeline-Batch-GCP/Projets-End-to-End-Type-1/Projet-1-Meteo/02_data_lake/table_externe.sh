@@ -19,6 +19,6 @@ echo "=== 2. Création du Dataset BigQuery ==="
 bq --location="${REGION}" mk --dataset "${PROJET_ID}:${DATASET}" || echo "Dataset déjà existant."
 
 echo "=== 3. Application du DDL des tables externes ==="
-bq query --use_legacy_sql=false < 02_data_lake/sql/01_table_externe.sql
+sed "s/\${PROJET_ID}/$PROJET_ID/g" 02_data_lake/sql/01_table_externe.sql | bq query --use_legacy_sql=false
 
 echo "=== Data Lake initialisé avec succès ==="
