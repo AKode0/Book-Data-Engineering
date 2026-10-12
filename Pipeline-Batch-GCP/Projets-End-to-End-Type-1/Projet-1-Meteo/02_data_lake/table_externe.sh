@@ -4,6 +4,9 @@
 # ==============================================================================
 set -euo pipefail
 
+# Se placer à la racine du projet
+cd "$(dirname "$0")/.."
+
 PROJET_ID=$(gcloud config get-value project)
 BUCKET_NAME="data-lake-meteo-${PROJET_ID}"
 REGION="europe-west9"

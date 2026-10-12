@@ -1,16 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Point d'entree Cloud Run. Le meme pipeline, declenche par HTTP.
-
-Trois differences avec le lancement local, et trois seulement.
-
-  1. La fonction prend un parametre `request`, exige par le service.
-  2. Elle rend un couple (corps, code HTTP). Un echec rend 500.
-  3. La configuration vient des variables d'environnement, posees au
-     deploiement.
-"""
+"""Point d'entree Cloud Functions Gen 2 / Cloud Run."""
 
 import json
 import os
+from datetime import datetime, timezone
 
 import requests
 from google.cloud import storage
@@ -19,15 +12,18 @@ from pipeline import executer
 
 
 def run_pipeline(request):
-    """Declenche par Cloud Scheduler. Rend 200 ou 500, jamais autre chose."""
+    """Declenche par Cloud Scheduler en HTTP. Rend 200 en cas de succes, 500 en echec."""
     try:
-        bilan = executer(storage.Client(), requests.Session(),
-                         os.environ["BUCKET"])
-      except Exception as erreur:
-        print(json.dumps({"severity": "ERROR", "statut": "ECHEC",
-                          "jour": jour, "erreur": type(erreur).__name__,
-                          "detail": str(erreur)[:500]}))
-        return ("erreur", 500)
-
-    print(json.dumps(bilan, ensure_ascii=False))
-    return json.dumps(bilan, ensure_ascii=False), 200
+        bucket = os.environ.get("BUCKET", f"data-lake-meteo-{os.environ.get('GCP_PROJECT', '')}")
+        bilan = executer(storage.Client(), requests.Session(), bucket)
+        print(json.dumps(bilan, ensure_ascii=False))
+        return (json.dumps(bilan, ensure_ascii=False), 200, {"Content-Type": "application/json"})
+    except Exception as erreur:
+        print(json.dumps({
+            "severity": "ERROR",
+            "statut": "ECHEC",
+            "date_utc": datetime.now(timezone.utc).isoformat(),
+            "erreur": type(erreur).__name__,
+            "detail": str(erreur)[:500]
+        }))
+        return (json.dumps({"erreur": str(erreur)}), 500, {"Content-Type": "application/json"})

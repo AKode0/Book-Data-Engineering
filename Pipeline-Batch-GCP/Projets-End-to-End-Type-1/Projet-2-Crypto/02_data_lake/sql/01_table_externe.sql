@@ -5,8 +5,7 @@
 CREATE OR REPLACE EXTERNAL TABLE `entrepot_crypto.raw_crypto` (
   actif STRING,
   prix_usd FLOAT64,
-  mesure_le STRING,
-  charge_le STRING
+  date_ingestion_utc STRING
 )
 OPTIONS (
   format = 'NEWLINE_DELIMITED_JSON',
@@ -14,9 +13,11 @@ OPTIONS (
 );
 
 CREATE OR REPLACE EXTERNAL TABLE `entrepot_crypto.raw_crypto_rejets` (
-  donnee_brute STRING,
+  actif STRING,
+  prix_usd FLOAT64,
+  date_ingestion_utc STRING,
   motif_rejet STRING,
-  charge_le TIMESTAMP
+  rejete_le_utc STRING
 )
 OPTIONS (
   format = 'NEWLINE_DELIMITED_JSON',

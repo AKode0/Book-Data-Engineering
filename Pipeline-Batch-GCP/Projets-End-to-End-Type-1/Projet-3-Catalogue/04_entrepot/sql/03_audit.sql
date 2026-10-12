@@ -1,13 +1,16 @@
-SELECT 'Valeurs nulles ou corrompues' AS anomalie, COUNT(*) AS volume
+-- Contrôles de qualité automatisés sur l'entrepôt catalogue
+SELECT 'Identifiant manquant ou corrompu' AS anomalie, COUNT(*) AS volume
 FROM `entrepot_catalogue.table_catalogue`
-WHERE valeur_mesure IS NULL
+WHERE identifiant IS NULL
 HAVING COUNT(*) > 0
+
 UNION ALL
-SELECT 'Doublons sur clé et horodatage', COUNT(*)
+
+SELECT 'Doublons sur identifiant' AS anomalie, COUNT(*) AS volume
 FROM (
-  SELECT cle_identifiant, horodatage_mesure
+  SELECT identifiant
   FROM `entrepot_catalogue.table_catalogue`
-  GROUP BY cle_identifiant, horodatage_mesure
+  GROUP BY identifiant
   HAVING COUNT(*) > 1
 )
 HAVING COUNT(*) > 0;

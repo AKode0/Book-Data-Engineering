@@ -4,13 +4,15 @@
 # ==============================================================================
 set -euo pipefail
 
+cd "$(dirname "$0")/.."
+
 PROJET_ID=$(gcloud config get-value project)
-BUCKET_NAME="data-lake-catalogue-${PROJET_ID}"
+BUCKET_CATALOGUE="data-lake-catalogue-${PROJET_ID}"
 REGION="europe-west9"
 DATASET="entrepot_catalogue"
 
 echo "=== 1. Création du Bucket Cloud Storage ==="
-gcloud storage buckets create "gs://${BUCKET_NAME}" \
+gcloud storage buckets create "gs://${BUCKET_CATALOGUE}" \
   --location="${REGION}" \
   --uniform-bucket-level-access \
   --public-access-prevention || echo "Bucket déjà existant."

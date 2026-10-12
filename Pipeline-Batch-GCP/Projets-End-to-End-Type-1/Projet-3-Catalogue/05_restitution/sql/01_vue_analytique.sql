@@ -1,8 +1,11 @@
+-- Vue analytique Looker Studio : répartition démographique par espèce, statut et genre
 CREATE OR REPLACE VIEW `entrepot_catalogue.vue_catalogue` AS
 SELECT
-  cle_identifiant,
-  DATE(horodatage_mesure) AS date_mesure,
-  valeur_mesure,
-  ROUND(AVG(valeur_mesure) OVER(PARTITION BY cle_identifiant ORDER BY horodatage_mesure ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 2) AS moyenne_mobile_7j,
-  horodatage_mesure
-FROM `entrepot_catalogue.table_catalogue`;
+  espece,
+  statut,
+  genre,
+  COUNT(*) AS total_personnages,
+  COUNT(DISTINCT origine) AS total_mondes_origine,
+  CURRENT_TIMESTAMP() AS vue_calculee_le
+FROM `entrepot_catalogue.table_catalogue`
+GROUP BY espece, statut, genre;

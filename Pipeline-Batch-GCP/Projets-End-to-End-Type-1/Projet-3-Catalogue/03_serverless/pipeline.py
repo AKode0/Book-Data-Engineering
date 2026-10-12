@@ -13,7 +13,8 @@ import requests
 from google.cloud import storage
 
 # Nom du compartiment de stockage parametre par variable d environnement
-BUCKET_NOM = os.environ.get("BUCKET_CATALOGUE", "data-lake-catalogue-defaut")
+PROJET_ID = os.environ.get("GCP_PROJECT", "deft-smile-511110-q3")
+BUCKET_NOM = os.environ.get("BUCKET_CATALOGUE", os.environ.get("BUCKET_NOM", f"data-lake-catalogue-{PROJET_ID}"))
 # URL de depart du catalogue d enregistrements
 API_URL = "https://rickandmortyapi.com/api/character"
 # Prefixe logique pour l organisation des compartiments sur Cloud Storage

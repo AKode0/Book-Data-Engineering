@@ -1,7 +1,6 @@
--- La table propre. NATIVE, donc stockee par BigQuery, donc rapide.
--- Partitionnee par jour de mesure, groupee par ville.
+-- Table native conforme, partitionnée et clusterisée pour des requêtes rapides et économiques.
 
-CREATE TABLE IF NOT EXISTS `PROJET_ID.entrepot.meteo` (
+CREATE TABLE IF NOT EXISTS `entrepot_meteo.releves_horaires` (
   ville       STRING    NOT NULL,
   mesure_le   TIMESTAMP NOT NULL,
   latitude    FLOAT64,
@@ -12,9 +11,8 @@ CREATE TABLE IF NOT EXISTS `PROJET_ID.entrepot.meteo` (
   charge_le   TIMESTAMP NOT NULL,
   dt          DATE      NOT NULL
 )
-PARTITION BY DATE(mesure_le)
+PARTITION BY dt
 CLUSTER BY ville
 OPTIONS (
-  description = "Mesures meteo, une ligne par ville et par releve",
-  require_partition_filter = true
+  description = "Mesures météo dédoublonnées et conformes, partitionnées par jour"
 );

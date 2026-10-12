@@ -4,13 +4,18 @@
 # ==============================================================================
 set -euo pipefail
 
+cd "$(dirname "$0")/.."
+
 PROJET_ID=$(gcloud config get-value project)
 BUCKET_CRYPTO="data-lake-crypto-${PROJET_ID}"
 REGION="europe-west9"
 DATASET="entrepot_crypto"
 
 echo "=== 1. Création du Bucket Cloud Storage ==="
-gcloud storage buckets create "gs://${BUCKET_CRYPTO}"   --location="${REGION}"   --uniform-bucket-level-access   --public-access-prevention || echo "Bucket déjà existant."
+gcloud storage buckets create "gs://${BUCKET_CRYPTO}" \
+  --location="${REGION}" \
+  --uniform-bucket-level-access \
+  --public-access-prevention || echo "Bucket déjà existant."
 
 echo "=== 2. Création du Dataset BigQuery ==="
 bq --location="${REGION}" mk --dataset "${PROJET_ID}:${DATASET}" || echo "Dataset déjà existant."

@@ -1,22 +1,47 @@
+import sys
+from pathlib import Path
 import pytest
-from src.pipeline import nettoyer_donnees
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.pipeline import valider_crypto, transformer_crypto
 
 def test_validation_crypto_conforme():
-    donnees_brutes = [
-        {"id": "bitcoin", "symbol": "btc", "current_price": 82875.0, "last_updated": "2026-10-12T12:00:00Z"},
-        {"id": "ethereum", "symbol": "eth", "current_price": 2534.28, "last_updated": "2026-10-12T12:00:00Z"}
-    ]
-    valides, rejets = nettoyer_donnees(donnees_brutes)
-    assert len(valides) == 2
-    assert len(rejets) == 0
-    assert valides[0]["actif"] == "bitcoin"
-    assert valides[0]["prix_usd"] == 82875.0
+    ligne = {
+        "actif": "bitcoin",
+        "prix_usd": 82875.0,
+        "date_ingestion_utc": "2026-10-12T12:00:00Z"
+    }
+    valide, rejet = valider_crypto(ligne)
+    assert valide is not None
+    assert rejet is None
+    assert valide["actif"] == "bitcoin"
+    assert valide["prix_usd"] == 82875.0
 
 def test_rejet_prix_negatif():
-    donnees_corrompues = [
-        {"id": "fakecoin", "symbol": "fk", "current_price": -10.0, "last_updated": "2026-10-12T12:00:00Z"}
-    ]
-    valides, rejets = nettoyer_donnees(donnees_corrompues)
-    assert len(valides) == 0
-    assert len(rejets) == 1
-    assert "prix_negatif_ou_nul" in rejets[0]["motif_rejet"]
+    ligne = {
+        "actif": "fakecoin",
+        "prix_usd": -10.0,
+        "date_ingestion_utc": "2026-10-12T12:00:00Z"
+    }
+    valide, rejet = valider_crypto(ligne)
+    assert valide is None
+    assert "R03" in rejet
+
+def test_rejet_actif_manquant():
+    ligne = {
+        "prix_usd": 100.0,
+        "date_ingestion_utc": "2026-10-12T12:00:00Z"
+    }
+    valide, rejet = valider_crypto(ligne)
+    assert valide is None
+    assert "R01" in rejet
+
+def test_transformation_crypto():
+    brut = {
+        "bitcoin": {"usd": 82875.0},
+        "ethereum": {"usd": 2534.28}
+    }
+    lignes = transformer_crypto(brut)
+    assert len(lignes) == 2
+    assert lignes[0]["actif"] == "bitcoin"
+    assert lignes[0]["prix_usd"] == 82875.0

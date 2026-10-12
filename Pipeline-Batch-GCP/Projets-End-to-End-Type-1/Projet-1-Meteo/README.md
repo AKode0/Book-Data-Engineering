@@ -1,125 +1,156 @@
-# Pipeline 1 — Socle Serverless & Ingestion API Native
+# Projet 1 : Pipeline Batch Météo End-to-End sur Google Cloud Platform (GCP)
 
-> **Sous-dossier Projet-1-Meteo** : Socle Serverless End-to-End d'ingestion API Native sous Google Cloud Platform.
-
-# Projet 1 — Pipeline Batch Météo End-to-End (GCP)
-
-Pipeline de données batch automatisé, résilient et idempotent, extrayant les relevés météorologiques horaires depuis l'API Open-Meteo pour les charger dans Google Cloud Storage et BigQuery.
+Ce projet implémente un pipeline de données batch complet, robuste et prêt pour la production, extrayant les observations météorologiques multi-villes depuis l'API Open-Meteo, les intégrant dans un Data Lake Cloud Storage, puis dans un entrepôt BigQuery partitionné et dédoublonné, jusqu'à la couche de restitution analytique Gold pour Looker Studio.
 
 ---
 
-## 1. Architecture Globale
+## 1. Architecture du Répertoire
 
-Le pipeline suit le cycle complet de l'ingénierie des données sur Google Cloud Platform :
-
-```text
-[API Open-Meteo]
-       │
-       ▼  (01_ingestion : extraction batch Python, typage strict, validation)
-[Cloud Storage (Data Lake GCS)]
-       │  Chemin Hive : gs://<bucket>/meteo/annee=YYYY/mois=MM/jour=DD/meteo_YYYY-MM-DD.jsonl
-       ▼
-[BigQuery : Table Externe]  (02_data_lake : requêtage direct sans coût de stockage supplémentaire)
-       │
-       ▼  (03_serverless : Cloud Function Gen 2 déclenchée par Cloud Scheduler)
-[BigQuery : Table Native Partitionnée]  (04_entrepot : partition DATE, clusterisation code_postal)
-       │  Chargement par MERGE SQL idempotent (zéro doublon garanti)
-       ▼
-[BigQuery : Vues Analytiques]  (05_restitution : agrégations, KPIs et exposition BI)
-```
-
----
-
-## 2. Structure du Projet
+Le projet respecte rigoureusement la norme industrielle en 5 modules :
 
 ```text
 Projet-1-Meteo/
-├── .gitignore
-├── README.md
-├── 01_ingestion/               # Ingestion locale & tests unitaires
-│   ├── .env.exemple            # Gabarit des variables d'environnement (sans secrets)
-│   ├── requirements.txt        # Dépendances Python (requests, google-cloud-storage, etc.)
-│   ├── learning/
-│   │   └── 00_audit.py         # Script exploratoire et audit du schéma de l'API
-│   ├── src/
-│   │   └── pipeline.py         # Code d'ingestion principal (idempotent, validé)
-│   └── tests/
-│       └── test_pipeline.py    # 12 tests unitaires automatisés (pytest)
-├── 02_data_lake/               # Définition du Data Lake Cloud Storage
-│   ├── sql/
-│   │   └── 01_table_externe.sql # Création de la table externe BigQuery sur GCS
-│   └── 02_controle_lake.sql    # Requêtes de validation et d'intégrité du lac
-├── 03_serverless/              # Industrialisation Serverless (Cloud Functions Gen 2)
-│   ├── main.py                 # Point d'entrée HTTP Cloud Function
-│   ├── pipeline.py             # Logique d'extraction et d'écriture Cloud
-│   ├── requirements.txt        # Dépendances du runtime Cloud Function
-│   └── deployer.sh             # Script de déploiement gcloud automatisé
-├── 04_entrepot/                # Entrepôt analytique BigQuery (Data Warehouse)
+├── 01_ingestion/       # [Python] Extraction, validation et NDJSON
+│   ├── .env.exemple
+│   ├── requirements.txt
+│   ├── src/pipeline.py
+│   └── tests/test_pipeline.py
+├── 02_data_lake/       # [Storage & BigQuery External] Zone brute
+│   ├── table_externe.sh         # Script Bash d'automatisation
+│   └── sql/01_table_externe.sql # Pur DDL des tables externes
+├── 03_serverless/      # [Cloud Functions & Scheduler] Automatisation
+│   ├── main.py
+│   ├── pipeline.py
+│   ├── requirements.txt
+│   ├── deployer.sh              # Script Bash de déploiement
+│   └── planificateur.sh         # Script Bash d'ordonnancement
+├── 04_entrepot/        # [BigQuery Native] Zone conforme dédoublonnée
 │   └── sql/
-│       ├── 01_table_native.sql # DDL de la table native partitionnée
-│       └── 02_merge.sql        # Requête MERGE idempotente (dédoublonnage)
-└── 05_restitution/             # Modélisation et vues de consommation
-    └── 01_vue_restitution.sql  # Vues analytiques pour reporting et BI
+│       ├── 01_table_native.sql  # DDL table partitionnée & clusterisée
+│       ├── 02_merge.sql         # MERGE INTO idempotent défensif
+│       └── 03_audit.sql         # Contrôles de qualité automatisés
+└── 05_restitution/     # [Looker Studio] Couche Métier Gold
+    └── sql/
+        └── 01_vue_analytique.sql # Vue analytique pour la BI
 ```
 
 ---
 
-## 3. Les 4 Piliers de Fiabilité Implémentés
+## 2. Piliers d'Architecture & Principes de Conception
 
-1. **Idempotence stricte** :
-   - Dépôt GCS découpé selon un chemin logique déterministe (`meteo/annee=YYYY/mois=MM/jour=DD/meteo_YYYY-MM-DD.jsonl`). Relancer le pipeline écrase le lot du jour sans jamais dupliquer de fichier.
-   - Chargement BigQuery via `MERGE` SQL sur clé primaire `(station_id, date_heure)`. Rejouer un lot met à jour l'enregistrement existant au lieu d'insérer un doublon.
-
-2. **Typage strict et validation à la source** :
-   - Chaque ligne reçue est castée et validée (conversion ISO 8601 en TIMESTAMP UTC, validation des plages de température et d'humidité).
-   - Les données invalides ou corrompues sont rejetées avant écriture dans le lac.
-
-3. **Sécurité et isolation des secrets** :
-   - Aucun token, clé d'API ou ID de projet n'est hardcodé.
-   - Utilisation exclusive des variables d'environnement (`.env` local, Secret Manager / variables Cloud Function en production).
-   - Fichiers `.env` et clés JSON strictement exclus par `.gitignore`.
-
-4. **Testabilité et observabilité** :
-   - Suite de tests unitaires automatisés via `pytest` couvrant la conversion des dates, la gestion des erreurs réseau, la structure du payload et l'idempotence.
-   - Logs structurés à chaque étape du pipeline.
+1. **Idempotence stricte** : Chaque lot quotidien est déposé sous un partitionnement Hive déterministe (`dt=YYYY-MM-DD/mesures.jsonl`). Deux exécutions le même jour remplacent le lot sans dupliquer de lignes.
+2. **Gestion explicite des rejets** : Aucune ligne non conforme n'est ignorée silencieusement. Les rejets partent dans un compartiment dédié (`rejets/meteo/dt=...`) avec le motif technique précis du rejet et l'enregistrement brut.
+3. **Contrôle d'intégrité arithmétique** : Chaque exécution valide l'assertion stricte : `lues == gardees + rejetees`. Une rupture arithmétique lève immédiatement une exception bloquante.
+4. **Cloisonnement Serverless & Moindre Privilège** : La Cloud Function tourne avec un compte de service dédié (`sa-pipeline`), et le Cloud Scheduler l'invoque via un jeton OIDC sécurisé (`sa-declencheur-meteo`).
 
 ---
 
-## 4. Démarrage Rapide
+## 3. Guide Opérationnel Pas à Pas
 
 ### Prérequis
-- Python 3.10+
-- Un compte Google Cloud Platform avec un projet configuré
-- SDK `gcloud` installé et authentifié (`gcloud auth application-default login`)
-
-### Installation locale et tests
+Assurez-vous d'avoir configuré votre projet GCP actif dans votre terminal :
 ```bash
-cd 01_ingestion
-
-# Créer l'environnement virtuel
-python3 -m venv venv
-source venv/bin/activate
-
-# Installer les dépendances
-pip install -r requirements.txt
-
-# Configurer les variables
-cp .env.exemple .env
-# Renseigner PROJECT_ID, BUCKET_NAME, etc. dans .env
-
-# Lancer la suite de tests unitaires
-pytest tests/
-```
-
-### Déploiement Serverless (Cloud Functions)
-```bash
-cd ../03_serverless
-chmod +x deployer.sh
-./deployer.sh
+gcloud config set project deft-smile-511110-q3
 ```
 
 ---
 
-## 5. Auteur & Contexte
+### Module 01 : Ingestion & Validation Locale
 
-Projet réalisé par **FOFANA Lazeny**.
+1. **Installation de l'environnement virtuel** :
+```bash
+cd 01_ingestion
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+2. **Configuration des variables d'environnement** :
+```bash
+cp .env.exemple .env
+# Renseigner PROJET_ID et BUCKET dans le fichier .env
+```
+
+3. **Exécution des tests unitaires** :
+Les tests valident les seuils thermiques (-80°C à +60°C), l'exhaustivité des motifs de rejets, la conservation du fuseau et l'arithmétique du bilan.
+```bash
+pytest -v tests/
+```
+
+4. **Exécution locale du pipeline** :
+```bash
+python3 src/pipeline.py
+```
+
+---
+
+### Module 02 : Data Lake & Tables Externes BigQuery
+
+Ce module provisionne le bucket de stockage Cloud Storage, le dataset BigQuery `entrepot_meteo`, et déclare les tables externes BigQuery `raw_meteo` et `rejets_meteo` avec partitionnement Hive.
+
+Exécutez le script d'automatisation :
+```bash
+cd ..
+bash 02_data_lake/table_externe.sh
+```
+
+**Vérification BigQuery** :
+```bash
+bq query --use_legacy_sql=false 'SELECT * FROM `entrepot_meteo.raw_meteo` LIMIT 5;'
+```
+
+---
+
+### Module 03 : Déploiement Serverless & Ordonnancement
+
+1. **Déploiement de la Cloud Function Gen 2** :
+Le script configure le compte de service, attribue les rôles IAM et déploie le conteneur serverless :
+```bash
+bash 03_serverless/deployer.sh
+```
+
+2. **Planification automatique (Cloud Scheduler)** :
+Configure le déclenchement quotidien à 06:00 (Europe/Paris) via appel HTTP authentifié OIDC :
+```bash
+bash 03_serverless/planificateur.sh
+```
+
+3. **Test manuel du déclencheur** :
+```bash
+gcloud scheduler jobs run job-meteo-quotidien --location=europe-west9
+```
+
+---
+
+### Module 04 : Entrepôt BigQuery & Normalisation
+
+1. **Création de la table native conforme** (partitionnée par `dt`, clusterisée par `ville`) :
+```bash
+bq query --use_legacy_sql=false < 04_entrepot/sql/01_table_native.sql
+```
+
+2. **Exécution du MERGE incrémental idempotent** :
+```bash
+bq query --use_legacy_sql=false < 04_entrepot/sql/02_merge.sql
+```
+
+3. **Contrôles de qualité automatisés** :
+```bash
+bq query --use_legacy_sql=false < 04_entrepot/sql/03_audit.sql
+```
+
+---
+
+### Module 05 : Restitution Analytique Gold & Looker Studio
+
+Créez la vue métier pré-agrégée intégrant températures moyennes, amplitudes thermiques et moyenne mobile sur 7 jours :
+```bash
+bq query --use_legacy_sql=false < 05_restitution/sql/01_vue_analytique.sql
+```
+
+**Interrogation de la vue finale** :
+```bash
+bq query --use_legacy_sql=false 'SELECT * FROM `entrepot_meteo.vue_meteo_journaliere` ORDER BY date_releve DESC, ville LIMIT 10;'
+```
+
+Connectez ensuite Looker Studio directement sur la vue `entrepot_meteo.vue_meteo_journaliere`.

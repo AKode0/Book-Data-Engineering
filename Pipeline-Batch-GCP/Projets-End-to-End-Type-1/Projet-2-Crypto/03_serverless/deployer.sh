@@ -4,12 +4,23 @@
 # ==============================================================================
 set -euo pipefail
 
+cd "$(dirname "$0")"
+
 PROJET_ID=$(gcloud config get-value project)
 BUCKET_CRYPTO="data-lake-crypto-${PROJET_ID}"
 REGION="europe-west9"
-SERVICE_ACCOUNT="sa-executeur-crypto@${PROJET_ID}.iam.gserviceaccount.com"
+SA_NAME="sa-executeur-crypto"
+SERVICE_ACCOUNT="${SA_NAME}@${PROJET_ID}.iam.gserviceaccount.com"
 
-echo "=== Déploiement de la Cloud Function ingestion-crypto ==="
+echo "=== 1. Vérification et création du compte de service exécuteur ==="
+gcloud iam service-accounts create "${SA_NAME}" \
+  --display-name="Exécuteur du pipeline crypto" || echo "Compte déjà existant."
+
+gcloud projects add-iam-policy-binding "${PROJET_ID}" \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/storage.objectAdmin" --condition=None || true
+
+echo "=== 2. Déploiement de la Cloud Function ingestion-crypto ==="
 gcloud functions deploy ingestion-crypto \
   --gen2 \
   --runtime=python311 \
@@ -20,7 +31,7 @@ gcloud functions deploy ingestion-crypto \
   --no-allow-unauthenticated \
   --service-account="${SERVICE_ACCOUNT}" \
   --set-env-vars="GCP_PROJECT=${PROJET_ID},BUCKET_CRYPTO=${BUCKET_CRYPTO}" \
-  --memory=512Mi \
-  --timeout=300s
+  --memory=256Mi \
+  --timeout=120s
 
 echo "=== Déploiement terminé avec succès ==="
