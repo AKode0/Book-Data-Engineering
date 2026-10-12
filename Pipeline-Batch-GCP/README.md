@@ -58,7 +58,7 @@ Pour couvrir l'ensemble des standards du Data Engineering moderne sur Google Clo
 
 | N° | Projet | Source & Format | Stack GCP | Apport Technique Clé / Pattern | Statut |
 |:---:|:---|:---|:---|:---|:---:|
-| **01** | [**Projet-1-Meteo**](./Projet-1-Meteo) | API Open-Meteo (JSON horaire) | Cloud Storage, Cloud Functions Gen 2, Cloud Scheduler, BigQuery | **Socle End-to-End complet** : Ingestion batch, Hive Partitioning, Table externe GCS, Table native partitionnée DATE, MERGE idempotent dédoublonnant, suite de 12 tests unitaires pytest. | ✅ **En production** |
+| **01** | [**Pipeline 1 — Socle Serverless & Ingestion API Native (Projet-1-Meteo)**](./Projet-1-Meteo) | API Open-Meteo (JSON horaire) | Cloud Storage, Cloud Functions Gen 2, Cloud Scheduler, BigQuery | **Socle End-to-End complet** : Ingestion batch, Hive Partitioning, Table externe GCS, Table native partitionnée DATE, MERGE idempotent dédoublonnant, suite de 12 tests unitaires pytest. | ✅ **En production** |
 
 ---
 

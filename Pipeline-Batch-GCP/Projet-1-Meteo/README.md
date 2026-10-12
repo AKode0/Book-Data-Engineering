@@ -1,3 +1,7 @@
+# Pipeline 1 — Socle Serverless & Ingestion API Native
+
+> **Sous-dossier Projet-1-Meteo** : Socle Serverless End-to-End d'ingestion API Native sous Google Cloud Platform.
+
 # Projet 1 — Pipeline Batch Météo End-to-End (GCP)
 
 Pipeline de données batch automatisé, résilient et idempotent, extrayant les relevés météorologiques horaires depuis l'API Open-Meteo pour les charger dans Google Cloud Storage et BigQuery.
